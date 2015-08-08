@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features>
+
+    <feature name="rifi-boot-feature" version="${project.version}">
+        <!--<feature version="2.15.2">camel-core</feature>-->
+        <!--<feature version="2.15.2">camel-blueprint</feature>-->
+    </feature>
+</features>
