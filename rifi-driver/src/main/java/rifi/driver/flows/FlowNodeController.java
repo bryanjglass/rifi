@@ -3,15 +3,21 @@ package rifi.driver.flows;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.camel.*;
-import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.metrics.routepolicy.MetricsRoutePolicyFactory;
 import org.apache.camel.model.ModelHelper;
+import org.apache.camel.spring.SpringCamelContext;
 import org.apache.camel.util.LoadPropertiesException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import rifi.driver.nodes.*;
+import rifi.driver.nodes.FlowNode;
 
+import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.Properties;
@@ -23,40 +29,61 @@ public class FlowNodeController {
     @Autowired
     ObjectMapper objectMapper;
 
-    @RequestMapping("")
+    @Autowired
+    FlowNodeRegistry flowNodeRegistry;
+
+    @Autowired
+    FlowManager flowManager;
+
+    @Autowired
+    CamelContext camelContext;
+
+    @Autowired
+    ApplicationContext applicationContext;
+
     public Map<String, Properties> findAvailableNodes() throws IOException, LoadPropertiesException {
-        DefaultCamelContext defaultCamelContext = new DefaultCamelContext();
         Map<String, Properties> nodes = new HashMap<>();
 
-        nodes.putAll(defaultCamelContext.findComponents());
-        nodes.putAll(defaultCamelContext.findEips());
+        nodes.putAll(camelContext.findComponents());
+        nodes.putAll(camelContext.findEips());
 
         return nodes;
     }
 
+    @RequestMapping("")
+    public Collection<FlowNodeDefinition> findAllFlowNodes() {
+        return flowNodeRegistry.getFlowNodes();
+    }
+
+    @RequestMapping("nodes/{nodeId}")
+    public  List<Map<String, String>> findFlowNode(@PathVariable("nodeId") String nodeId) {
+        FlowNodeDefinition flowNode = flowNodeRegistry.findFlowNode(nodeId);
+
+        if(flowNode == null) {
+            throw new EntityNotFoundException();
+        }
+
+        return flowNode.resolveDetails();
+    }
+
     @RequestMapping("components/{nodeId}")
     public Object findComponent(@PathVariable String nodeId) throws IOException {
-        DefaultCamelContext defaultCamelContext = new DefaultCamelContext();
-        return objectMapper.reader().readTree(defaultCamelContext.explainComponentJson(nodeId, true));
+        return objectMapper.reader().readTree(camelContext.explainComponentJson(nodeId, true));
     }
 
     @RequestMapping("eips/{nodeId}")
     public Object findEip(@PathVariable String nodeId) throws IOException {
-        DefaultCamelContext defaultCamelContext = new DefaultCamelContext();
-        return objectMapper.reader().readTree(defaultCamelContext.explainEipJson(nodeId, true));
+        return objectMapper.reader().readTree(camelContext.explainEipJson(nodeId, true));
     }
 
     @RequestMapping("endpoints/{nodeId}")
     public Object findEndpoint(@PathVariable String nodeId) throws IOException {
-        DefaultCamelContext defaultCamelContext = new DefaultCamelContext();
-        return objectMapper.reader().readTree(defaultCamelContext.explainEndpointJson(nodeId + "://foo", true));
+        return objectMapper.reader().readTree(camelContext.explainEndpointJson(nodeId + "://foo", true));
     }
 
     @RequestMapping("create/{type}")
     public Endpoint createRoute(@PathVariable("type") String type) throws Exception {
-        DefaultCamelContext context = new DefaultCamelContext();
-
-        Component component = context.getComponent(type, true);
+        Component component = camelContext.getComponent(type, true);
         ComponentConfiguration configuration = component.createComponentConfiguration();
 
 
@@ -66,30 +93,67 @@ public class FlowNodeController {
         return endpoint;
     }
 
-    @RequestMapping(value="route")
-    public String getRoute() throws Exception {
+
+    @RequestMapping(value="route/start/{name}")
+    public String getRoute(@PathVariable("name") String name) throws Exception {
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
-        Node node1 = new FileNode();
-        Node node2 = new FilterNode();
-        Node routerNode = new RouterNode();
-        Node routerPath1 = new LogNode();
+        FlowNode rootNode = createGraph();
+        RouteBuilder routeBuilder = flowManager.startFlow(name, rootNode);
+
+        return ModelHelper.dumpModelAsXml(routeBuilder.getContext(), routeBuilder.getRouteCollection());
+    }
+
+    @RequestMapping("route/stop/{name}")
+    public void stopRoute(@PathVariable("name") String name) {
+        flowManager.stopFlow(name);
+    }
+
+    @RequestMapping(value = "graph")
+    public FlowNode getGraph() {
+        return createGraph();
+    }
+
+    private FlowNode createGraph() {
+        FlowNode node1 = new TimerFlowNode();
+        node1.getOptions().put("name", "myTimer");
+        node1.getOptions().put("period", 5000);
+        FlowNode node2 = new FileFlowNode();
+        node2.getOptions().put("directoryName", "/tmp/first");
+        FlowNode routerNode = new RouterFlowNode();
+        FlowNode routerPath1 = new LogFlowNode();
         routerPath1.getOptions().put("message", "path1");
-        Node routerChildPath1 = new FileNode();
-        Node routerPath2 = new LogNode();
+        FlowNode routerChildPath1 = new FileFlowNode();
+        FlowNode routerPath2 = new LogFlowNode();
         routerPath2.getOptions().put("message", "path2");
+        FlowNode lastNode = new FileFlowNode();
+        lastNode.getOptions().put("directoryName", "/tmp/last");
 
-        node1.setTarget(node2);
-        node2.setSource(node1);
-        node2.setTarget(routerNode);
-        routerNode.setSource(node2);
-        routerNode.getChildren().add(routerPath1);
-        routerPath1.setTarget(routerChildPath1);
-        routerChildPath1.setSource(routerPath1);
-        routerNode.getChildren().add(routerPath2);
+        node1.setTargetNode(node2);
+        node2.setSourceNode(node1);
+        node2.setTargetNode(routerNode);
+        routerNode.setSourceNode(node2);
+        routerNode.getChildNodes().add(routerPath1);
+        routerPath1.setSourceNode(routerNode);
+        routerPath1.setTargetNode(routerChildPath1);
+        routerChildPath1.setSourceNode(routerPath1);
+        routerChildPath1.setSourceNode(routerPath1);
+        routerNode.getChildNodes().add(routerPath2);
+        routerPath2.setSourceNode(routerNode);
+        routerNode.setTargetNode(lastNode);
+        lastNode.setSourceNode(routerNode);
 
-        FlowRouteBuilder routeBuilder = new FlowRouteBuilder(node1);
-        routeBuilder.configure();
-        return ModelHelper.dumpModelAsXml(routeBuilder.getContext(), routeBuilder.getRouteCollection().getRoutes().get(0));
+        return node1;
+    }
+
+    @RequestMapping("test")
+    public Object test() {
+        TestableFlowNode testNode = new FileFlowNode();
+        testNode.getOptions().put("directoryName", "/tmp/last");
+        try {
+            return testNode.test(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

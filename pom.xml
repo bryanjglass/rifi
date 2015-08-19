@@ -19,8 +19,18 @@
         <module>rifi-driver</module>
         <module>rifi-engine</module>
         <module>rifi-core</module>
+        <module>rifi-web</module>
+        <module>rifi-metrics</module>
     </modules>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>springloaded</artifactId>
+            <version>1.2.4.RELEASE</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
     <build>
         <resources>
             <resource>
@@ -126,6 +136,11 @@
             <dependency>
                 <groupId>rifi</groupId>
                 <artifactId>rifi-engine</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>rifi</groupId>
+                <artifactId>rifi-metrics</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>rifi-driver</artifactId>
+    <artifactId>rifi-web</artifactId>
 
     <dependencies>
         <dependency>
@@ -18,7 +18,11 @@
         </dependency>
         <dependency>
             <groupId>rifi</groupId>
-            <artifactId>rifi-engine</artifactId>
+            <artifactId>rifi-driver</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>rifi</groupId>
+            <artifactId>rifi-metrics</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -36,16 +40,7 @@
             <groupId>org.jolokia</groupId>
             <artifactId>jolokia-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>de.codecentric</groupId>
-            <artifactId>spring-boot-admin-server</artifactId>
-            <version>1.2.2</version>
-        </dependency>
-        <dependency>
-            <groupId>de.codecentric</groupId>
-            <artifactId>spring-boot-admin-server-ui</artifactId>
-            <version>1.2.2</version>
-        </dependency>
+
 
     </dependencies>
 
@@ -55,8 +50,11 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>rifi.driver.Application</mainClass>
+                    <mainClass>rifi.web.Application</mainClass>
                     <layout>ZIP</layout>
+                    <arguments>
+                        <argument>-Dspringloaded=watchJars=rifi-driver-1.0-SNAPSHOT.jar:rifi-metrics-1.0-SNAPSHOT.jar</argument>
+                    </arguments>
                 </configuration>
             </plugin>
         </plugins>

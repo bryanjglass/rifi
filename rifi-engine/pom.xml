@@ -16,5 +16,9 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
         </dependency>
+        <dependency>
+            <groupId>rifi</groupId>
+            <artifactId>rifi-core</artifactId>
+        </dependency>
     </dependencies>
 </project>
