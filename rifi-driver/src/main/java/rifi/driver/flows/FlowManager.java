@@ -51,21 +51,20 @@ public class FlowManager implements ApplicationListener<ApplicationContextEvent>
     public FlowRouteBuilder startFlow(String name, rifi.driver.nodes.FlowNode root) throws Exception {
         GenericApplicationContext childApplicationContext = new GenericApplicationContext(applicationContext);
         childApplicationContext.setDisplayName(name);
-        childApplicationContext.refresh();
         childContexts.add(childApplicationContext);
+
         CamelContext camelContext =  new SpringCamelContext(childApplicationContext);
 
         ConfigurableListableBeanFactory beanFactory = childApplicationContext.getBeanFactory();
         beanFactory.registerSingleton(camelContext.getClass().getCanonicalName(), camelContext);
-//        CamelContext camelContext =  new SpringCamelContext(childApplicationContext);
         camelContext.setNameStrategy(new ExplicitCamelContextNameStrategy(name));
+        childApplicationContext.refresh();
 
         FlowRouteBuilder routeBuilder = new FlowRouteBuilder(root);
         camelContext.addRoutePolicyFactory(new MetricsRoutePolicyFactory());
         camelContext.addRoutes(routeBuilder);
 
-//        childApplicationContext.refresh();
-        camelContext.start();
+//        camelContext.start();
 
         return routeBuilder;
     }

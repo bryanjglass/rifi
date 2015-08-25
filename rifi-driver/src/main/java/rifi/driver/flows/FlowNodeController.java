@@ -51,19 +51,19 @@ public class FlowNodeController {
     }
 
     @RequestMapping("")
-    public Collection<FlowNodeDefinition> findAllFlowNodes() {
-        return flowNodeRegistry.getFlowNodes();
+    public Collection<FlowNodeDefinition> findAllFlowNodeDefinitions() {
+        return flowNodeRegistry.findAllFlowNodeDefinitions();
     }
 
     @RequestMapping("nodes/{nodeId}")
     public  List<Map<String, String>> findFlowNode(@PathVariable("nodeId") String nodeId) {
-        FlowNodeDefinition flowNode = flowNodeRegistry.findFlowNode(nodeId);
+        FlowNode flowNode = flowNodeRegistry.findFlowNode(nodeId);
 
         if(flowNode == null) {
             throw new EntityNotFoundException();
         }
 
-        return flowNode.resolveDetails();
+        return null;
     }
 
     @RequestMapping("components/{nodeId}")

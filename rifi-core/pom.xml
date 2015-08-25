@@ -52,5 +52,11 @@
             <artifactId>camel-metrics</artifactId>
             <version>${camel.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>net.sf.jung</groupId>
+            <artifactId>jung-graph-impl</artifactId>
+            <version>2.0.1</version>
+        </dependency>
     </dependencies>
 </project>

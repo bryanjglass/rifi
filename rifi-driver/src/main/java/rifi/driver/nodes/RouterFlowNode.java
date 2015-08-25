@@ -9,6 +9,11 @@ import static org.apache.camel.builder.SimpleBuilder.simple;
 public class RouterFlowNode extends AbstractFlowNode {
 
     @Override
+    public String getName() {
+        return "router";
+    }
+
+    @Override
     public ProcessorDefinition build(RouteBuilder route, ProcessorDefinition sourceDefinition) throws Exception {
         ChoiceDefinition definition = sourceDefinition.choice();
 

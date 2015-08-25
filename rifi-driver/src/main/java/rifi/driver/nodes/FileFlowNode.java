@@ -12,12 +12,18 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.spring.SpringCamelContext;
+import org.springframework.stereotype.Component;
 import rifi.driver.flows.*;
 
 import java.util.List;
 
-@rifi.driver.flows.FlowNode(name = "file")
+@Component
 public class FileFlowNode extends AbstractFlowNode implements TestableFlowNode {
+
+    @Override
+    public String getName() {
+        return "file";
+    }
 
     @Override
     public ProcessorDefinition build(RouteBuilder route, ProcessorDefinition sourceDefinition) throws Exception {

@@ -9,6 +9,11 @@ import org.apache.camel.model.ProcessorDefinition;
 
 public class TimerFlowNode extends AbstractFlowNode {
     @Override
+    public String getName() {
+        return "timer";
+    }
+
+    @Override
     public ProcessorDefinition build(RouteBuilder route, ProcessorDefinition sourceDefinition) throws Exception {
         TimerComponent component = route.getContext().getComponent("timer", TimerComponent.class);
         ComponentConfiguration componentConfiguration = component.createComponentConfiguration();

@@ -9,6 +9,8 @@ import java.util.Map;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)
 public interface FlowNode {
+    String getName();
+
     ProcessorDefinition build(RouteBuilder route, ProcessorDefinition sourceDefinition) throws Exception;
 
     Map<String, Object> getOptions();
